@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard - Nível de Água</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="p-4">
+  <h1>🌊 Monitoramento da Pista</h1>
+  <p class="text-muted">Últimas leituras recebidas</p>
+
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>Data/Hora</th>
+        <th>Local</th>
+        <th>Nível (mm)</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for leitura in leituras %}
+      <tr>
+        <td>{{ leitura.timestamp }}</td>
+        <td>{{ leitura.local }}</td>
+        <td>{{ leitura.nivel }}</td>
+        <td>
+          {% if leitura.nivel > limite %}
+            <span class="badge bg-danger">⚠️ Alerta</span>
+          {% else %}
+            <span class="badge bg-success">OK</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>
