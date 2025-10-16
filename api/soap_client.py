@@ -1,39 +1,45 @@
 # api/soap_client.py
 import requests
 from requests.auth import HTTPBasicAuth
+from datetime import datetime
 
-# Exemplo de endpoint SOAP (ajuste para o seu ambiente)
-HXGN_ENDPOINT = "https://seu-servidor-eam.com/ws/MP0102_CreateWorkOrder"
+# Endpoint do seu servidor de teste
+HXGN_ENDPOINT = "http://192.168.15.9:7575/axis/services/EWSConnector"
 
-# Credenciais do EAM
+# Credenciais locais
 HXGN_USER = "ACOSTA"
-HXGN_PASS = "Asset@25"
+HXGN_PASS = "Assettec@2025"
 
-# Namespace padrão do HxGN EAM
+# Namespaces SOAP e da função
 SOAP_NS = "http://schemas.xmlsoap.org/soap/envelope/"
-EAM_NS = "http://ws.eam.infor.com/"
+FUNC_NS = "http://schemas.datastream.net/MP_functions/MP0102_001"  # Função de criação de OS
+
+# Campos fixos de teste — depois podemos torná-los dinâmicos
+TIPO_OS = "Breakdown"
+EQUIPAMENTO = "AR-001"
+DEPARTAMENTO = "*"
+STATUS = "R"
+ORGANIZACAO = "ORG01"
 
 def criar_ordem_servico(local: str, nivel: float, timestamp: str):
-    """
-    Chama o serviço SOAP do HxGN EAM para criar uma Ordem de Serviço.
-    """
-    descricao = f"⚠️ Nível de água alto detectado em {local}"
-    notas = f"Nível: {nivel} mm | Horário: {timestamp}"
+    descricao = f"⚠️ Alerta de nível de água em {local}"
+    notas = f"Nível: {nivel} mm - Data/Hora: {timestamp}"
 
     envelope = f"""
-    <soapenv:Envelope xmlns:soapenv="{SOAP_NS}" xmlns:ws="{EAM_NS}">
+    <soapenv:Envelope xmlns:soapenv="{SOAP_NS}" xmlns:mp="{FUNC_NS}">
        <soapenv:Header/>
        <soapenv:Body>
-          <ws:MP0102_CreateWorkOrder>
-             <ws:workorder>
-                <ws:organization>ORG01</ws:organization>
-                <ws:department>{local}</ws:department>
-                <ws:wotype>INSPEC</ws:wotype>
-                <ws:description>{descricao}</ws:description>
-                <ws:notes>{notas}</ws:notes>
-                <ws:status>R</ws:status>
-             </ws:workorder>
-          </ws:MP0102_CreateWorkOrder>
+          <mp:MP0102_CreateWorkOrder>
+             <mp:workorder>
+                <mp:organization>{ORGANIZACAO}</mp:organization>
+                <mp:department>{DEPARTAMENTO}</mp:department>
+                <mp:equipment>{EQUIPAMENTO}</mp:equipment>
+                <mp:wotype>{TIPO_OS}</mp:wotype>
+                <mp:description>{descricao}</mp:description>
+                <mp:notes>{notas}</mp:notes>
+                <mp:status>{STATUS}</mp:status>
+             </mp:workorder>
+          </mp:MP0102_CreateWorkOrder>
        </soapenv:Body>
     </soapenv:Envelope>
     """
@@ -44,16 +50,21 @@ def criar_ordem_servico(local: str, nivel: float, timestamp: str):
     }
 
     try:
-        print("📡 Enviando requisição SOAP real para HxGN EAM...")
+        print("📡 Enviando requisição SOAP para EWSConnector local...")
         response = requests.post(
             HXGN_ENDPOINT,
             data=envelope.encode("utf-8"),
             headers=headers,
             auth=HTTPBasicAuth(HXGN_USER, HXGN_PASS),
-            verify=False  # ⚠️ Apenas se o servidor tiver certificado self-signed
+            timeout=15
         )
-
         print(f"📬 Status: {response.status_code}")
-        print(f"📝 Resposta SOAP:\n{response.text[:500]}")  # mostra parte inicial
+        print(f"📝 Resposta SOAP:\n{response.text[:600]}")
+
+        if response.status_code == 200 and "<returnCode>0</returnCode>" in response.text:
+            print("✅ OS criada com sucesso no EAM!")
+        else:
+            print("⚠️ Falha ao criar OS — verifique a resposta acima.")
+
     except Exception as e:
         print(f"❌ Erro na integração SOAP: {e}")
