@@ -24,4 +24,4 @@ if __name__ == "__main__":
     print("🧪 Iniciando simulador de sensor...")
     while True:
         enviar_leitura()
-        time.sleep(100)
+        time.sleep(50)
